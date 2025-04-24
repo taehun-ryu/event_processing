@@ -2,8 +2,7 @@
 #include <iostream>
 
 H5Reader::H5Reader(const std::string &fileName)
-  : fileName_(fileName), file_(nullptr)
-{
+    : fileName_(fileName), file_(nullptr) {
   try {
     file_ = new H5::H5File(fileName_, H5F_ACC_RDONLY);
   } catch (H5::FileIException &error) {
@@ -12,16 +11,14 @@ H5Reader::H5Reader(const std::string &fileName)
   }
 }
 
-H5Reader::~H5Reader()
-{
+H5Reader::~H5Reader() {
   if (file_) {
     delete file_;
     file_ = nullptr;
   }
 }
 
-EventArray::Ptr H5Reader::readEvents()
-{
+EventArray::Ptr H5Reader::readEvents() {
   auto eventArray = std::make_shared<EventArray>();
 
   try {
@@ -34,7 +31,8 @@ EventArray::Ptr H5Reader::readEvents()
     size_t ncols = dims_out[1];
 
     if (ncols != 4) {
-      std::cerr << "[H5Reader] Expected 4 columns (t, x, y, p), got " << ncols << std::endl;
+      std::cerr << "[H5Reader] Expected 4 columns (t, x, y, p), got " << ncols
+                << std::endl;
       return eventArray;
     }
 
@@ -46,7 +44,8 @@ EventArray::Ptr H5Reader::readEvents()
       int x = static_cast<int>(flat_data[i * 4 + 1]);
       int y = static_cast<int>(flat_data[i * 4 + 2]);
       int p = static_cast<int>(flat_data[i * 4 + 3]);
-      if (p == 0) p = -1;
+      if (p == 0)
+        p = -1;
 
       auto evt = std::make_shared<Event>(t, Event::LocType(x, y), p);
       eventArray->addEvent(evt);

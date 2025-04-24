@@ -1,14 +1,13 @@
 #pragma once
 
-#include <memory>
 #include <Eigen/Core>
+#include <memory>
 #include <vector>
 
-class Event
-{
+class Event {
 public:
   using Ptr = std::shared_ptr<Event>;
-  using LocType= Eigen::Vector2<std::uint16_t>;
+  using LocType = Eigen::Vector2<std::uint16_t>;
 
 private:
   double timestamp_;
@@ -30,8 +29,7 @@ public:
   void setPolarity(int polarity);
 };
 
-class EventArray
-{
+class EventArray {
 public:
   using Ptr = std::shared_ptr<EventArray>;
 

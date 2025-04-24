@@ -1,14 +1,13 @@
+#include "EventArray.h"
 #include <algorithm>
 #include <iostream>
-#include "EventArray.h"
 
 /// @brief Default constructor for Event.
-Event::Event()
-  : timestamp_(0.0), location_(LocType::Zero()), polarity_(0) {}
+Event::Event() : timestamp_(0.0), location_(LocType::Zero()), polarity_(0) {}
 
 /// @brief Construct an Event with timestamp, position and polarity.
 Event::Event(double timestamp, const LocType &location, int polarity)
-  : timestamp_(timestamp), location_(location), polarity_(polarity) {}
+    : timestamp_(timestamp), location_(location), polarity_(polarity) {}
 
 /// @brief Get timestamp of the event.
 /// @return Timestamp in seconds.
@@ -36,7 +35,7 @@ EventArray::EventArray() {}
 
 /// @brief Construct EventArray from an existing event list.
 EventArray::EventArray(const std::vector<Event::Ptr> &events)
-  : events_(events) {}
+    : events_(events) {}
 
 /// @brief Add an Event to the array.
 /// @param event Shared pointer to Event.
@@ -55,22 +54,19 @@ void EventArray::addEvent(double t, int x, int y, int p) {
 
 /// @brief Get const reference to all events in the array.
 /// @return Reference to vector of Event pointers.
-const std::vector<Event::Ptr> &EventArray::getEvents() const {
-  return events_;
-}
+const std::vector<Event::Ptr> &EventArray::getEvents() const { return events_; }
 
 /// @brief Get number of events in the array.
 /// @return Event count.
-size_t EventArray::size() const {
-  return events_.size();
-}
+size_t EventArray::size() const { return events_.size(); }
 
 /// @brief Normalize timestamps so that first event starts at 0.
 void EventArray::normalizeTimestampsToStart() {
-  if (events_.empty()) return;
+  if (events_.empty())
+    return;
 
   double t_min = getMinTimestamp();
-  for (auto& e : events_) {
+  for (auto &e : events_) {
     double normalized = e->getTimestamp() - t_min;
     e->setTimestamp(normalized);
   }
@@ -85,7 +81,7 @@ double EventArray::getMinTimestamp() const {
   }
 
   double min_ts = std::numeric_limits<double>::max();
-  for (const auto& e : events_) {
+  for (const auto &e : events_) {
     if (e->getTimestamp() < min_ts) {
       min_ts = e->getTimestamp();
     }
@@ -112,10 +108,9 @@ struct CompareByTimestamp {
 /// @param t_min Start time (inclusive)
 /// @param t_max End time (inclusive)
 void EventArray::filterByTime(double t_min, double t_max) {
-  events_.erase(
-    std::remove_if(events_.begin(), events_.end(), TimeRangeChecker(t_min, t_max)),
-    events_.end()
-  );
+  events_.erase(std::remove_if(events_.begin(), events_.end(),
+                               TimeRangeChecker(t_min, t_max)),
+                events_.end());
 }
 
 /// @brief Sort events in ascending order of timestamp.
@@ -129,14 +124,15 @@ void EventArray::sortByTime() {
 std::vector<EventArray::Ptr> EventArray::splitByTimeBin(double bin_size) const {
   std::vector<EventArray::Ptr> bins;
 
-  if (events_.empty()) return bins;
+  if (events_.empty())
+    return bins;
 
   std::vector<Event::Ptr> sorted_events = events_;
   std::sort(sorted_events.begin(), sorted_events.end(), CompareByTimestamp());
 
   double t_start = sorted_events.front()->getTimestamp();
-  double t_end   = sorted_events.back()->getTimestamp();
-  double t_curr  = t_start;
+  double t_end = sorted_events.back()->getTimestamp();
+  double t_curr = t_start;
 
   size_t idx = 0;
   while (t_curr < t_end) {

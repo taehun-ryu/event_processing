@@ -1,13 +1,12 @@
 #pragma once
 
+#include <H5Cpp.h>
 #include <iostream>
 #include <string>
-#include <H5Cpp.h>
 
 #include "EventArray.h"
 
-class H5Reader
-{
+class H5Reader {
 public:
   explicit H5Reader(const std::string &fileName);
   ~H5Reader();
