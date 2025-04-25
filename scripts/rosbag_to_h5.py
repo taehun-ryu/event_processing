@@ -39,8 +39,8 @@ def get_rosbag_stats(bag, event_topic, image_topic=None, flow_topic=None):
     return num_event_msgs, num_img_msgs, num_flow_msgs
 
 
-# Inspired by https://github.com/uzh-rpg/rpg_e2vid 
-# Modified for Python 3 
+# Inspired by https://github.com/uzh-rpg/rpg_e2vid and https://github.com/TimoStoff/event_utils
+# Modified for Python 3
 # Fixed zero_ts implementation
 def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
                    flow_topic=None, start_time=None, end_time=None, zero_ts=False,
