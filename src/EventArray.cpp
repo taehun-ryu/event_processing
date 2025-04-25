@@ -56,6 +56,8 @@ void EventArray::addEvent(double t, int x, int y, int p) {
 /// @return Reference to vector of Event pointers.
 const std::vector<Event::Ptr> &EventArray::getEvents() const { return events_; }
 
+Event::Ptr EventArray::getEvent(size_t idx) const { return events_.at(idx); }
+
 /// @brief Get number of events in the array.
 /// @return Event count.
 size_t EventArray::size() const { return events_.size(); }

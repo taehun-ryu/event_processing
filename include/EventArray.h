@@ -44,6 +44,7 @@ public:
   void addEvent(double t, int x, int y, int p);
 
   [[nodiscard]] const std::vector<Event::Ptr> &getEvents() const;
+  [[nodiscard]] Event::Ptr getEvent(size_t idx) const;
   size_t size() const;
 
   // Timestamp utility
