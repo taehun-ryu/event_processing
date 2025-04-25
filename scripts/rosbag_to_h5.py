@@ -39,104 +39,107 @@ def get_rosbag_stats(bag, event_topic, image_topic=None, flow_topic=None):
     return num_event_msgs, num_img_msgs, num_flow_msgs
 
 
-# Inspired by https://github.com/uzh-rpg/rpg_e2vid
+# Inspired by https://github.com/uzh-rpg/rpg_e2vid 
+# Modified for Python 3 
+# Fixed zero_timestamps implementation
 def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
                    flow_topic=None, start_time=None, end_time=None, zero_timestamps=False,
                    packager=hdf5_packager, is_color=False):
     ep = packager(output_path)
-    topics = (event_topic, image_topic, flow_topic)
-    event_msg_sum = 0
-    num_msgs_between_logs = 25
-    first_ts = -1
-    t0 = -1
+    first_ts = None
+    t0 = None
     sensor_size = None
+
     if not os.path.exists(rosbag_path):
-        print("{} does not exist!".format(rosbag_path))
+        print(f"{rosbag_path} does not exist!")
         return
+
     with rosbag.Bag(rosbag_path, 'r') as bag:
-        # Look for the topics that are available and save the total number of messages for each topic (useful for the progress bar)
-        num_event_msgs, num_img_msgs, num_flow_msgs = get_rosbag_stats(bag, event_topic, image_topic, flow_topic)
-        # Extract events to h5
+        num_event_msgs, num_img_msgs, num_flow_msgs = get_rosbag_stats(
+            bag, event_topic, image_topic, flow_topic)
+
         xs, ys, ts, ps = [], [], [], []
         max_buffer_size = 1e20
         ep.set_data_available(num_img_msgs, num_flow_msgs)
-        num_pos, num_neg, last_ts, img_cnt, flow_cnt = 0, 0, 0, 0, 0
+        num_pos = num_neg = img_cnt = flow_cnt = 0
 
-        for topic, msg, t in tqdm(bag.read_messages()):
-            if first_ts == -1 and topic in topics:
-                timestamp = timestamp_float(msg.header.stamp)
-                first_ts = timestamp
-                if zero_timestamps:
-                    timestamp = timestamp-first_ts
-                if start_time is None:
-                    start_time = first_ts
-                start_time = start_time + first_ts
-                if end_time is not None:
-                    end_time = end_time+start_time
-                t0 = timestamp
+        for topic, msg, _ in tqdm(bag.read_messages()):
+            # --- EVENTS ---
+            if topic == event_topic:
+                for e in msg.events:
+                    raw_t = timestamp_float(e.ts)
+                    # initialize first_ts on the very first event
+                    if first_ts is None:
+                        first_ts = raw_t
+                        t0 = 0.0 if zero_timestamps else raw_t
 
-            if topic == image_topic:
-                timestamp = timestamp_float(msg.header.stamp)-(first_ts if zero_timestamps else 0)
+                    rel_t = raw_t - (first_ts if zero_timestamps else 0.0)
+
+                    xs.append(e.x)
+                    ys.append(e.y)
+                    ts.append(rel_t)
+                    ps.append(1 if e.polarity else 0)
+
+                    if e.polarity:
+                        num_pos += 1
+                    else:
+                        num_neg += 1
+
+                    last_ts = rel_t
+
+                # flush if buffer too big
+                if len(xs) > max_buffer_size:
+                    if sensor_size is None:
+                        sensor_size = [max(ys) + 1, max(xs) + 1]
+                    ep.package_events(xs, ys, ts, ps)
+                    xs.clear(); ys.clear(); ts.clear(); ps.clear()
+
+            # --- IMAGES (optional) ---
+            elif topic == image_topic:
+                raw_t = timestamp_float(msg.header.stamp)
+                rel_t = raw_t - (first_ts if zero_timestamps else 0.0)
+
                 if is_color:
                     image = CvBridge().imgmsg_to_cv2(msg, "bgr8")
                 else:
                     image = CvBridge().imgmsg_to_cv2(msg, "mono8")
 
-                ep.package_image(image, timestamp, img_cnt)
+                ep.package_image(image, rel_t, img_cnt)
                 sensor_size = image.shape
                 img_cnt += 1
 
+            # --- FLOW (optional) ---
             elif topic == flow_topic:
-                timestamp = timestamp_float(msg.header.stamp)-(first_ts if zero_timestamps else 0)
+                raw_t = timestamp_float(msg.header.stamp)
+                rel_t = raw_t - (first_ts if zero_timestamps else 0.0)
 
-                flow_x = np.array(msg.flow_x)
-                flow_y = np.array(msg.flow_y)
-                flow_x.shape = (msg.height, msg.width)
-                flow_y.shape = (msg.height, msg.width)
+                flow_x = np.array(msg.flow_x).reshape(msg.height, msg.width)
+                flow_y = np.array(msg.flow_y).reshape(msg.height, msg.width)
                 flow_image = np.stack((flow_x, flow_y), axis=0)
 
-                ep.package_flow(flow_image, timestamp, flow_cnt)
+                ep.package_flow(flow_image, rel_t, flow_cnt)
                 flow_cnt += 1
 
-            elif topic == event_topic:
-                event_msg_sum += 1
-                #if event_msg_sum % num_msgs_between_logs == 0 or event_msg_sum >= num_event_msgs - 1:
-                #    print('Event messages: {} / {}'.format(event_msg_sum + 1, num_event_msgs))
-                for e in msg.events:
-                    timestamp = timestamp_float(e.ts)-(first_ts if zero_timestamps else 0)
-                    xs.append(e.x)
-                    ys.append(e.y)
-                    ts.append(timestamp)
-                    ps.append(1 if e.polarity else 0)
-                    if e.polarity:
-                        num_pos += 1
-                    else:
-                        num_neg += 1
-                    last_ts = timestamp
-                if (len(xs) > max_buffer_size and timestamp >= start_time) or (end_time is not None and timestamp >= start_time):
-                    print("Writing events")
-                    if sensor_size is None or sensor_size[0] < max(ys) or sensor_size[1] < max(xs):
-                        sensor_size = [max(ys), max(xs)]
-                        print("Sensor size inferred from events as {}".format(sensor_size))
-                    ep.package_events(xs, ys, ts, ps)
-                    del xs[:]
-                    del ys[:]
-                    del ts[:]
-                    del ps[:]
-                if end_time is not None and timestamp >= start_time:
-                    return
-                if sensor_size is None or sensor_size[0] < max(ys) or sensor_size[1] < max(xs):
-                    sensor_size = [max(ys), max(xs)]
-                    print("Sensor size inferred from events as {}".format(sensor_size))
-                ep.package_events(xs, ys, ts, ps)
-                del xs[:]
-                del ys[:]
-                del ts[:]
-                del ps[:]
+        # final flush of any remaining event buffer
+        if xs:
+            if sensor_size is None:
+                sensor_size = [max(ys) + 1, max(xs) + 1]
+            ep.package_events(xs, ys, ts, ps)
+
         if sensor_size is None:
             raise Exception("ERROR: No sensor size detected, implies no events/images in bag topics?")
-        print("Detected sensor size {}".format(sensor_size))
-        ep.add_metadata(num_pos, num_neg, last_ts-t0, t0, last_ts, img_cnt, flow_cnt, sensor_size)
+
+        # metadata: num_pos, num_neg, duration, t0, last_ts, img_cnt, flow_cnt, sensor_size
+        ep.add_metadata(
+            num_pos,
+            num_neg,
+            last_ts - t0,
+            t0,
+            last_ts,
+            img_cnt,
+            flow_cnt,
+            sensor_size
+        )
 
 
 def extract_rosbags(rosbag_paths, output_dir, event_topic, image_topic, flow_topic,
