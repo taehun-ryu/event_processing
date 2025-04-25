@@ -1,4 +1,6 @@
 #include "H5Reader.h"
+#include <H5Cpp.h>
+#include <vector>
 #include <iostream>
 
 H5Reader::H5Reader(const std::string &fileName)
@@ -22,30 +24,40 @@ EventArray::Ptr H5Reader::readEvents() {
   auto event_array = std::make_shared<EventArray>();
 
   try {
-    H5::DataSet dataset = file_->openDataSet("events_data");
-    H5::DataSpace dataspace = dataset.getSpace();
+    // Open the "/events" group
+    H5::Group grp = file_->openGroup("/events");
 
-    hsize_t dims_out[2];
-    dataspace.getSimpleExtentDims(dims_out, nullptr);
-    size_t nrows = dims_out[0];
-    size_t ncols = dims_out[1];
+    // Open each 1-D dataset
+    H5::DataSet ds_x = grp.openDataSet("xs");
+    H5::DataSet ds_y = grp.openDataSet("ys");
+    H5::DataSet ds_t = grp.openDataSet("ts");
+    H5::DataSet ds_p = grp.openDataSet("ps");
 
-    if (ncols != 4) {
-      std::cerr << "[H5Reader] Expected 4 columns (t, x, y, p), got " << ncols
-                << std::endl;
-      return event_array;
-    }
+    // Determine number of events (all four should have the same length)
+    H5::DataSpace space = ds_x.getSpace();
+    hsize_t n;
+    space.getSimpleExtentDims(&n, nullptr);
+    size_t num_events = static_cast<size_t>(n);
 
-    std::vector<double> flat_data(nrows * ncols);
-    dataset.read(flat_data.data(), H5::PredType::NATIVE_DOUBLE);
+    // Allocate buffers
+    std::vector<uint16_t> xs(num_events);
+    std::vector<uint16_t> ys(num_events);
+    std::vector<double>   ts(num_events);
+    std::vector<uint8_t>  ps(num_events);
 
-    for (size_t i = 0; i < nrows; ++i) {
-      double t = flat_data[i * 4 + 0];
-      int x = static_cast<int>(flat_data[i * 4 + 1]);
-      int y = static_cast<int>(flat_data[i * 4 + 2]);
-      int p = static_cast<int>(flat_data[i * 4 + 3]);
-      if (p == 0)
-        p = -1;
+    // Read into buffers
+    ds_x.read(xs.data(), H5::PredType::NATIVE_UINT16);
+    ds_y.read(ys.data(), H5::PredType::NATIVE_UINT16);
+    ds_t.read(ts.data(), H5::PredType::NATIVE_DOUBLE);
+    ds_p.read(ps.data(), H5::PredType::NATIVE_UINT8);
+
+    // Reconstruct EventArray
+    for (size_t i = 0; i < num_events; ++i) {
+      double t = ts[i];
+      int x    = static_cast<int>(xs[i]);
+      int y    = static_cast<int>(ys[i]);
+      // convert stored 0/1 polarity back to -1/+1
+      int p    = (ps[i] ? +1 : -1);
 
       auto evt = std::make_shared<Event>(t, Event::LocType(x, y), p);
       event_array->addEvent(evt);
@@ -53,8 +65,8 @@ EventArray::Ptr H5Reader::readEvents() {
 
     std::cout << "[H5Reader] Loaded " << event_array->size() << " events.\n";
 
-  } catch (H5::Exception &error) {
-    error.printErrorStack();
+  } catch (H5::Exception &err) {
+    err.printErrorStack();
   }
 
   return event_array;
