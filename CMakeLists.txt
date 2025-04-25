@@ -9,7 +9,7 @@ add_executable(main
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
-#find_package(Ceres REQUIRED)
+find_package(Ceres REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
 
 target_include_directories(main PRIVATE
@@ -20,7 +20,7 @@ target_include_directories(main PRIVATE
 target_link_libraries(main PRIVATE
   ${OpenCV_LIBS}
   Eigen3::Eigen
-  #Ceres::ceres
+  Ceres::ceres
   ${HDF5_LIBRARIES}
 )
 
