@@ -39,8 +39,8 @@ def get_rosbag_stats(bag, event_topic, image_topic=None, flow_topic=None):
     return num_event_msgs, num_img_msgs, num_flow_msgs
 
 
-# Inspired by https://github.com/uzh-rpg/rpg_e2vid and https://github.com/TimoStoff/event_utils
-# Modified for Python 3
+# Inspired by https://github.com/uzh-rpg/rpg_e2vid 
+# Modified for Python 3 
 # Fixed zero_ts implementation
 def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
                    flow_topic=None, start_time=None, end_time=None, zero_ts=False,
@@ -64,15 +64,18 @@ def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
         num_pos = num_neg = img_cnt = flow_cnt = 0
 
         for topic, msg, _ in tqdm(bag.read_messages()):
+            if first_ts is None:
+                if topic == event_topic and msg.events:
+                    raw_t0 = timestamp_float(msg.events[0].ts)
+                else:
+                    raw_t0 = timestamp_float(msg.header.stamp)
+                first_ts = raw_t0
+                t0 = 0.0 if zero_ts else raw_t0
+
             # --- EVENTS ---
             if topic == event_topic:
                 for e in msg.events:
                     raw_t = timestamp_float(e.ts)
-                    # initialize first_ts on the very first event
-                    if first_ts is None:
-                        first_ts = raw_t
-                        t0 = 0.0 if zero_ts else raw_t
-
                     rel_t = raw_t - (first_ts if zero_ts else 0.0)
 
                     xs.append(e.x)
