@@ -113,9 +113,12 @@ if __name__ == "__main__":
 
     for bag in bags:
         base = os.path.splitext(os.path.basename(bag))[0]
+        if args.output_dir:
+            out_dir = args.output_dir
+        else:
+            bag_folder = os.path.dirname(bag)
+            out_dir    = os.path.dirname(bag_folder)
 
-        # decide output folder
-        out_dir = args.output_dir if args.output_dir else os.path.dirname(bag)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f"{base}.h5")
 
