@@ -19,7 +19,7 @@ H5Reader::~H5Reader() {
 }
 
 EventArray::Ptr H5Reader::readEvents() {
-  auto eventArray = std::make_shared<EventArray>();
+  auto event_array = std::make_shared<EventArray>();
 
   try {
     H5::DataSet dataset = file_->openDataSet("events_data");
@@ -33,7 +33,7 @@ EventArray::Ptr H5Reader::readEvents() {
     if (ncols != 4) {
       std::cerr << "[H5Reader] Expected 4 columns (t, x, y, p), got " << ncols
                 << std::endl;
-      return eventArray;
+      return event_array;
     }
 
     std::vector<double> flat_data(nrows * ncols);
@@ -48,14 +48,14 @@ EventArray::Ptr H5Reader::readEvents() {
         p = -1;
 
       auto evt = std::make_shared<Event>(t, Event::LocType(x, y), p);
-      eventArray->addEvent(evt);
+      event_array->addEvent(evt);
     }
 
-    std::cout << "[H5Reader] Loaded " << eventArray->size() << " events.\n";
+    std::cout << "[H5Reader] Loaded " << event_array->size() << " events.\n";
 
   } catch (H5::Exception &error) {
     error.printErrorStack();
   }
 
-  return eventArray;
+  return event_array;
 }
