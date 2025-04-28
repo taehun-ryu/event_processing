@@ -20,24 +20,29 @@ find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(HDF5 REQUIRED COMPONENTS C CXX)
+find_package(Pangolin REQUIRED)
 ################################################################################
 # Build
 ################################################################################
 include_directories(
   include
   ${HDF5_INCLUDE_DIRS}
+  ${Pangolin_INCLUDE_DIRS}
 )
 
-# ------- RCLCPP -------
-add_executable(event_3d_visualizer_node
-  src/event_3d_visualizer.cpp
+# ------- RCLCPP (plain style only) -------
+add_executable(visualizer_node
+  src/visualizer_node.cpp
 )
-ament_target_dependencies(event_3d_visualizer_node
+ament_target_dependencies(visualizer_node # ament_target only include ROS pacakges.
   rclcpp
   dvs_msgs
   visualization_msgs
   geometry_msgs
   std_msgs
+)
+target_link_libraries(visualizer_node
+  ${Pangolin_LIBRARIES}
 )
 
 # ------- C++ -------
@@ -58,7 +63,7 @@ target_link_libraries(event_cpp PRIVATE
 # lib/<package>: executable binaries
 install(
   TARGETS
-    event_3d_visualizer_node
+    visualizer_node
     event_cpp
   DESTINATION lib/${PROJECT_NAME}
 )
