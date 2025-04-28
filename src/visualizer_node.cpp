@@ -34,15 +34,20 @@ public:
                                                -2000, 2000 // z
                                                ),
         pangolin::ModelViewLookAt(0, 0, 1000, 0, 0, 0, 0, -1, 0));
-
+    initial_cam_state_ = s_cam_;
     d_cam_ = &pangolin::CreateDisplay()
                   .SetBounds(0.0, 1.0, 0.0, 1.0)
                   .SetAspect(450.0f / 350.0f)
                   .SetHandler(new pangolin::Handler3D(s_cam_));
+    pangolin::CreatePanel("ui").SetBounds(0, 1, 0, pangolin::Attach::Pix(180));
+    reset_view_ = new pangolin::Var<bool>("ui.Reset View", false);
   }
 
   void Run() {
     while (!pangolin::ShouldQuit()) {
+      if (pangolin::Pushed(*reset_view_)) {
+        s_cam_ = initial_cam_state_;
+      }
       rclcpp::spin_some(this->get_node_base_interface());
       RenderFrame();
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -126,7 +131,9 @@ private:
   double start_time_;
   bool start_time_set_;
 
+  pangolin::Var<bool> *reset_view_;
   pangolin::OpenGlRenderState s_cam_;
+  pangolin::OpenGlRenderState initial_cam_state_;
   pangolin::View *d_cam_;
 };
 
