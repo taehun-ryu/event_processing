@@ -68,7 +68,9 @@ class Event3DVisualizer(Node):
 
 def main():
     rclpy.init()
-    node = Event3DVisualizer(window_size=0.03, update_interval=0.1)
+    hz = 30
+    f = 1/hz
+    node = Event3DVisualizer(window_size=f, update_interval=0.1)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
