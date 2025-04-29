@@ -50,6 +50,7 @@ add_executable(event_cpp
   src/main.cpp
   src/H5Reader.cpp
   src/EventArray.cpp
+  src/Representation.cpp
 )
 target_link_libraries(event_cpp PRIVATE
   ${OpenCV_LIBS}
