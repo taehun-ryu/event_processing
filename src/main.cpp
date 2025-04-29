@@ -16,7 +16,7 @@ int main() {
   full_events->normalizeTimestampsToStart();
   full_events->filterByTime(5.0, 6.0);
 
-  // 슬라이딩 구간별 Tencode
+  // Tencode
   auto bins = full_events->splitByTimeBin(0.03);
   for (const auto &bin : bins) {
     cv::Mat f = makeTencodeImage(bin, 346, 260);
