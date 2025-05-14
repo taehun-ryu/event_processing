@@ -21,16 +21,16 @@ if __name__ == "__main__":
     events = pp.load_h5_events(H5_PATH)
     #filtered_events = pp.filter_events_by_time(events, t_start=5.0, t_end=5.0033)
 
-    start_idx = 10000
-    end_idx= start_idx + 200000
+    start_idx = 100000
+    end_idx= start_idx + 50000
     filtered_events =  events[start_idx:end_idx]
 
     rep.plot_3d_events(filtered_events)
 
     tencode = rep.tencode_frame(filtered_events, WIDTH, HEIGHT)
-    time_surface = rep.time_surface(filtered_events, WIDTH, HEIGHT)
+    ts_on, ts_off = rep.time_surface(filtered_events, WIDTH, HEIGHT)
 
     cv2.namedWindow("View", cv2.WINDOW_NORMAL)
-    cv2.imshow("View", time_surface)
+    cv2.imshow("View", ts_on)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

@@ -72,9 +72,13 @@ def time_surface(events, width, height):
 
     t_ref = events[-1, 0]
     tau = 50e-3
-    sae = np.zeros((height, width), np.float32)
+    last_ts = np.full((2, height, width), -np.inf, dtype=np.float32)
     for t, x, y, p in events:
-        xi, yi = int(x), int(y)
-        sae[yi, xi] = np.exp(-(t_ref-t) / tau)
+        ix = int(round(x))
+        iy = int(round(y))
+        ch = 0 if p > 0 else 1
+        last_ts[ch, iy, ix] = max(last_ts[ch, iy, ix], t)
+    ts = np.exp(-(t_ref - last_ts) / tau)
+    ts[last_ts < 0] = 0
 
-    return sae
+    return ts[0], ts[1] # on, off
