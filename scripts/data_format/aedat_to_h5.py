@@ -14,16 +14,16 @@ def save_events_h5(timestamps, xs, ys, ps, out_dir, out_fname):
     with h5py.File(fullpath, "w") as hf:
         grp = hf.create_group("events")
         grp.create_dataset("ts",
-                           data=np.array(timestamps, dtype=np.int64),
+                           data=np.array(timestamps, dtype=np.float64),
                            compression="gzip", chunks=True)
         grp.create_dataset("xs",
-                           data=np.array(xs, dtype=np.int32),
+                           data=np.array(xs, dtype=np.uint16),
                            compression="gzip", chunks=True)
         grp.create_dataset("ys",
-                           data=np.array(ys, dtype=np.int32),
+                           data=np.array(ys, dtype=np.uint16),
                            compression="gzip", chunks=True)
         grp.create_dataset("ps",
-                           data=np.array(ps, dtype=bool),
+                           data=np.array(ps, dtype=np.uint8),
                            compression="gzip", chunks=True)
 
     print(f"[+] Saved HDF5 events to: {fullpath}")
@@ -37,8 +37,8 @@ def main():
     args = parser.parse_args()
 
     # prepare reader
-    reader = dv.io.MonoCameraRecording(args.input)
-    print(f"[+] Opened {args.input} (camera: {reader.getCameraName()})")
+    reader = dv.io.MonoCameraRecording(args.aedat4_file)
+    print(f"[+] Opened {args.aedat4_file} (camera: {reader.getCameraName()})")
 
     # accumulate
     timestamps, xs, ys, ps = [], [], [], []
@@ -63,7 +63,7 @@ def main():
         print(f"[+] Zero-based timestamps applied (t0 = {t0})")
 
     # determine output name
-    basename = os.path.splitext(os.path.basename(args.input))[0]
+    basename = os.path.splitext(os.path.basename(args.aedat4_file))[0]
     output_name = args.output_name or basename
 
     # save to h5
