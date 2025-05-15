@@ -47,7 +47,9 @@ def main():
         if batch is None:
             continue
         for e in batch:
-            timestamps.append(e.timestamp())
+            t_microseconds = e.timestamp()
+            t_seconds = t_microseconds * 1e-6 # convert to seconds
+            timestamps.append(t_seconds)
             xs.append(e.x())
             ys.append(e.y())
             ps.append(1 if e.polarity() else 0)
